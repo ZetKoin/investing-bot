@@ -6,17 +6,13 @@ from . import get_all_table_names, create_tables
 
 logger = logging.getLogger(__name__)
 
-TABLE_NAMES = ['TICKERS', 'TRADES']
-
 
 class DataProviderManager:
 
     def __init__(self, config: Dict[str, Any]) -> None:
 
         self.__config = config
-
-        if TABLE_NAMES != get_all_table_names(self.__config):
-            create_tables(self.__config)
+        create_tables(self.__config)
 
         logger.info("Starting all data providers ...")
 

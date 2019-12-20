@@ -6,7 +6,7 @@ from bot import setup
 
 logger = logging.getLogger(__name__)
 
-TICKER_TABLE_NAME = 'TICKERS'
+SELECTION_STOCKS_TABLE_NAME = 'SELECTION'
 TRADES_TABLE_NAME = 'TRADES'
 
 
@@ -17,13 +17,13 @@ def create_connection(config: Dict[str, Any]):
 def create_tables(config: Dict[str, Any]) -> None:
     table_names = get_all_table_names(config)
 
-    if TICKER_TABLE_NAME not in table_names:
-        logger.info("Creating database table {} ...".format(TICKER_TABLE_NAME))
+    if SELECTION_STOCKS_TABLE_NAME not in table_names:
+        logger.info("Creating database table {} ...".format(SELECTION_STOCKS_TABLE_NAME))
         con = create_connection(config)
 
         # Create ticker tables
         con.execute('''
-            CREATE TABLE TICKERS
+            CREATE TABLE SELECTION
             ([ticker_id] INTEGER PRIMARY KEY, [ticker] text, [company_name] text, [category] text)
         ''')
 
@@ -79,7 +79,7 @@ def remove_ticker(ticker: str, config: Dict[str, Any]) -> None:
     con.close()
 
 
-def get_company_profile(ticker: str, config: Dict[str, any]) -> Tuple[str]:
+def get_company_profile_from_selection(ticker: str, config: Dict[str, any]) -> Tuple[str]:
     con = create_connection(config)
     cursor = con.cursor()
 
@@ -92,7 +92,7 @@ def get_company_profile(ticker: str, config: Dict[str, any]) -> Tuple[str]:
     return result
 
 
-def get_tickers(config: Dict[str, any]) -> List[str]:
+def get_tickers_from_selection(config: Dict[str, any]) -> List[str]:
     con = create_connection(config)
     cursor = con.cursor()
 

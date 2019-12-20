@@ -1,8 +1,8 @@
 import logging
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
-from bot.data import remove_ticker, get_tickers, add_ticker, get_company_profile
+from bot.data import remove_ticker, get_tickers_from_selection, add_ticker, get_company_profile_from_selection
 from bot import __version__, OperationalException
 from bot.data.data_provider_manager import DataProviderManager
 
@@ -19,7 +19,7 @@ class Bot:
         self.__data_provider_manager = DataProviderManager(self.config)
 
         # Load tickers
-        self._load_tickers()
+        self.load_stock_selection_from_config()
 
     @property
     def config(self) -> Dict[str, Any]:
@@ -28,22 +28,22 @@ class Bot:
     def set_config(self, config: Dict[str, Any]):
         self.__config = config
 
-    def _load_tickers(self):
-        logger.info("Initializing provided tickers from config ...")
+    def load_stock_selection_from_config(self):
+        logger.info("Initializing provided stocks from config ...")
         tickers = self.__config.get('tickers', [])
 
         for ticker in tickers:
 
             try:
-                self.add_ticker(ticker)
+                self.add_stock_to_selection(ticker)
             except OperationalException as e:
                 logger.error(str(e))
                 continue
 
-    def add_ticker(self, ticker: str) -> None:
-        logger.info("Adding ticker ...")
+    def add_stock_to_selection(self, ticker: str) -> None:
+        logger.info("Adding stock to selection ...")
 
-        if not get_company_profile(ticker, self.config):
+        if not get_company_profile_from_selection(ticker, self.config):
 
             if self.__data_provider_manager.evaluate_ticker(ticker):
 
@@ -56,10 +56,10 @@ class Bot:
                 category = profile.get('profile', {}).get('industry', None)
 
                 if not company_name:
-                    raise OperationalException("Could not evaluate company name for ticker {} with the data providers")
+                    raise OperationalException("Could not evaluate company name for stock {} with the data providers")
 
                 if not company_name:
-                    raise OperationalException("Could not evaluate category for ticker {} with the data providers")
+                    raise OperationalException("Could not evaluate category for stock {} with the data providers")
 
                 try:
                     add_ticker(
@@ -70,30 +70,51 @@ class Bot:
                     )
                 except Exception:
                     raise OperationalException(
-                        "Something went wrong with adding ticker {} to the registry".format(ticker)
+                        "Something went wrong with adding stock {} to the selection".format(ticker)
                     )
             else:
-                raise OperationalException("Could not evaluate ticker {} with the data providers".format(ticker))
+                raise OperationalException("Could not evaluate stock {} with the data providers".format(ticker))
         else:
             raise OperationalException(
                 "Ticker {} is already present in registry".format(ticker)
             )
 
-    def remove_ticker(self, ticker: str) -> None:
-        logger.info("Removing ticker ...")
+    def remove_stock_from_selection(self, ticker: str) -> None:
+        logger.info("Removing stock from selection ...")
 
-        if get_company_profile(ticker, self.config):
+        if get_company_profile_from_selection(ticker, self.config):
 
             try:
                 remove_ticker(ticker, self.config)
             except Exception:
-                raise OperationalException("Something went wrong while deleting the ticker from the registry")
+                raise OperationalException("Something went wrong while deleting the stock from the selection")
         else:
-            raise OperationalException("Provided ticker {} does not exist".format(ticker))
+            raise OperationalException("Provided stock {} does not exist in the selection".format(ticker))
 
-    def list_tickers(self):
-        logger.info("Listing tickers ...")
-        return get_tickers(self.config)
+    def get_stocks_selection(self) -> List[str]:
+        logger.info("Get stocks from selection ...")
+        tickers = get_tickers_from_selection(self.config)
+        result = []
+
+        for ticker in tickers:
+            result.append(ticker[0])
+
+        return result
+
+    def remove_stocks_selection(self) -> None:
+        logger.info("Removing stocks selection ...")
+        tickers = self.get_stocks_selection()
+
+        for ticker in tickers:
+            try:
+                self.remove_stock_from_selection(ticker)
+            except OperationalException as e:
+                logger.error(str(e))
+                continue
+
+        logger.info("Removed stock selection")
+
+
 
 
 
